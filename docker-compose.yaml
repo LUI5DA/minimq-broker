@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  broker:
+    build: ./broker
+    ports:
+      - "5000:5000"
+    volumes:
+      - broker-data:/app/data  # Persist logs locally
+
+  producer:
+    build: ./producer
+    depends_on:
+      - broker
+
+  consumer:
+    build: ./consumer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - broker
+
+volumes:
+  broker-data:

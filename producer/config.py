@@ -1,6 +1,6 @@
 # config.py
 
-# BROKER_URL = "http://broker:5000/produce"  # Will work in Docker
-TOPIC = "temperature"
+#BROKER_URL = "http://localhost:5000/produce"  # or 'http://broker:5000' in Docker
+BROKER_URL = "http://broker:5000"
+TOPICS = ["temperature", "humidity", "pressure"]
 INTERVAL_SECONDS = 2
-BROKER_URL = "http://localhost:5000/produce"

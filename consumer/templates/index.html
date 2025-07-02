@@ -6,11 +6,22 @@
     <meta http-equiv="refresh" content="2">
 </head>
 <body>
-    <h1>🌡 Temperature Topic</h1>
-    <ul>
-        {% for msg in messages %}
-        <li>{{ msg }}</li>
+    <h1>📡 MiniMQ – Topic Viewer</h1>
+
+    <form method="GET" action="/">
+    <label for="topic">Select Topic:</label>
+    <select name="topic" onchange="this.form.submit()">
+        {% for t in topics %}
+        <option value="{{ t }}" {% if t == selected_topic %}selected{% endif %}>{{ t }}</option>
         {% endfor %}
+    </select>
+    </form>
+
+    <ul>
+    {% for msg in messages %}
+        <li>{{ msg }}</li>
+    {% endfor %}
     </ul>
+
 </body>
 </html>
