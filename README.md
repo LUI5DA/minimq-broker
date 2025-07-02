@@ -6,17 +6,6 @@ It showcases core concepts of microservices, message persistence, concurrent mes
 
 ---
 
-## 📦 Architecture Overview
-
-```
-[ producer (Python) ] --->     [          ]
-[ producer (Python) ] ----->   [  broker  ] ---> [ consumer UI (Flask) ]
-[ producer (Python) ] ----->   [  (Go)    ] ---> [ ...future consumers ]
-                               [          ]
-```
-
----
-
 ## ✨ Features
 
 - ✅ Message broker in **Go**
@@ -40,7 +29,6 @@ mini-mq/
 │   ├── handlers.go
 │   ├── storage.go
 │   ├── offset.go
-│   ├── models.go
 │   ├── Dockerfile
 │   └── data/         # Logs per topic
 │
@@ -54,7 +42,7 @@ mini-mq/
 │   ├── app.py
 │   ├── consumer_logic.py
 │   ├── templates/
-│   ├── static/
+│   |   ├── index.html
 │   ├── Dockerfile
 │   └── requirements.txt
 │
@@ -87,8 +75,8 @@ mini-mq/
 1. **Clone the repository**:
 
 ```bash
-git clone https://github.com/your-username/mini-mq.git
-cd mini-mq
+git clone https://github.com/LUI5DA/minimq-broker.git
+cd 
 ```
 
 2. **Make sure Docker is installed**, then run:
@@ -124,17 +112,6 @@ Or run many at once:
 
 ```bash
 docker compose up --scale producer=3
-```
-
----
-
-## ⚙️ Configuration
-
-### Producer (`config.py`)
-```python
-BROKER_URL = "http://broker:5000"
-TOPICS = ["temperature", "humidity", "pressure"]
-INTERVAL_SECONDS = 2
 ```
 
 ---
