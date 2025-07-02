@@ -47,6 +47,10 @@ func appendMessageToFile(topic, message string) error {
 
 // Read the message at the given offset (0 = first message)
 func readMessageAtOffset(topic string, offset int) (string, error) {
+    lock := getTopicLock(topic)
+    lock.Lock()
+    defer lock.Unlock()
+
     path := fmt.Sprintf("data/%s.log", topic)
 
     data, err := os.ReadFile(path)
