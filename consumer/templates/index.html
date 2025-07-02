@@ -1,0 +1,15 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MiniMQ UI</title>
+</head>
+<body>
+    <h1>🌡 Temperature Topic</h1>
+    <ul>
+        {% for msg in messages %}
+        <li>{{ msg }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
