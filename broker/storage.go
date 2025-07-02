@@ -4,10 +4,33 @@ package main
 import (
     "fmt"
     "os"
+    "sync"
 )
+
+// One mutex per topic
+var topicLocks = make(map[string]*sync.Mutex)
+var topicLockMu sync.Mutex  // Global lock for protecting the map
+
+
+func getTopicLock(topic string) *sync.Mutex {
+    topicLockMu.Lock()
+    defer topicLockMu.Unlock()
+
+    // If no lock for this topic yet, create one
+    if _, exists := topicLocks[topic]; !exists {
+        topicLocks[topic] = &sync.Mutex{}
+    }
+
+    return topicLocks[topic]
+}
+
 
 // Save a message in a log file
 func appendMessageToFile(topic, message string) error {
+    lock := getTopicLock(topic)
+    lock.Lock()
+    defer lock.Unlock()
+
     path := fmt.Sprintf("data/%s.log", topic)
 
     f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -19,6 +42,7 @@ func appendMessageToFile(topic, message string) error {
     _, err = f.WriteString(message + "\n")
     return err
 }
+
 
 
 // Read the message at the given offset (0 = first message)
