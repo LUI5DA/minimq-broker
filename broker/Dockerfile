@@ -1,6 +1,5 @@
 # broker/Dockerfile
-
-FROM golang:1.21 as builder
+FROM golang:1.24.4 as builder
 
 WORKDIR /app
 COPY . .
