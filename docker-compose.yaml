@@ -6,12 +6,17 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - broker-data:/app/data  # Persist logs locally
+      - broker-data:/app/data
+    networks:
+      - minimq-network
 
   producer:
     build: ./producer
     depends_on:
       - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
 
   consumer:
     build: ./consumer
@@ -19,6 +24,12 @@ services:
       - "8080:8080"
     depends_on:
       - broker
+    networks:
+      - minimq-network
 
 volumes:
   broker-data:
+
+networks:
+  minimq-network:
+    driver: bridge
