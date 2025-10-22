@@ -10,13 +10,35 @@ services:
     networks:
       - minimq-network
 
-  producer:
+  producer-cpu:
     build: ./producer
     depends_on:
       - broker
     networks:
       - minimq-network
     restart: unless-stopped
+    environment:
+      - METRIC_TYPE=cpu
+
+  producer-mem:
+    build: ./producer
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
+    environment:
+      - METRIC_TYPE=mem
+
+  producer-disk:
+    build: ./producer
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
+    environment:
+      - METRIC_TYPE=disk
 
   consumer:
     build: ./consumer
