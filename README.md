@@ -9,11 +9,11 @@ It demonstrates microservice communication, message persistence, metric streamin
 ## ✨ What's New
 
 - 🚀 **Kubernetes support** with Deployments, Services, and DaemonSets  
-- 📊 **System observability** via producers collecting real host metrics (using `psutil`)  
-- 🧠 **DaemonSet producers** running on every node to stream CPU, memory, and disk usage  
-- 🧱 **Improved broker** with automatic log directory creation and persistent `/app/data` storage  
+- 📊 **Node-level observability** via producers collecting real host metrics (using `psutil`)  
+- 🧠 **Dynamic node registration** — each node self-registers with the broker automatically  
+- 🖥️ **Dashboard per node** — visualize CPU, memory, and disk usage for every node in the cluster  
+- 🧱 **Improved broker** with automatic directory creation and `/app/data` persistence  
 - 🐳 **Docker Hub integration** for portable image deployment  
-- 💻 **Dashboard UI** (Flask) to visualize messages and metrics  
 - 🔁 Backward-compatible with **Docker Compose** for local testing  
 
 ---
@@ -21,19 +21,24 @@ It demonstrates microservice communication, message persistence, metric streamin
 ## 🏗 Architecture Overview
 
 ```
-+-----------------+        +-----------------+        +----------------+
-| Producer (CPU)  | --->   |                 | --->   |                |
-| Producer (MEM)  | --->   |     Broker      | --->   |   Consumer UI  |
-| Producer (DISK) | --->   |   (Go Server)   | --->   |  (Flask App)   |
-+-----------------+        +-----------------+        +----------------+
-          ^                        |
-          |                        |
-   (Runs on every node via)        |
-        Kubernetes DaemonSet       |
++------------------+         +------------------+         +----------------+
+| Producer (CPU)   | --->    |                  | --->    |                |
+| Producer (MEM)   | --->    |     Broker       | --->    |   Dashboard    |
+| Producer (DISK)  | --->    |   (Go Server)    | --->    |   (Flask UI)   |
++------------------+         +------------------+         +----------------+
+        ↑                            |
+        |                            |
+   (Runs on every node via)          |
+        Kubernetes DaemonSet         |
 ```
 
-Each producer is a small Python container that reads host metrics using `psutil` and publishes them to the Go broker via HTTP.  
-The broker logs all messages in `/app/data/<topic>.log`, and the Flask consumer visualizes them in a live dashboard.
+Each node runs a set of producers (CPU, MEM, DISK) as DaemonSets.  
+On startup, producers:
+1. Register their **node name** with the broker (`topic="nodes"`).  
+2. Stream metrics under topics like `<node>-cpu`, `<node>-mem`, and `<node>-disk`.  
+
+The broker logs every message in `/app/data/<topic>.log`,  
+and the Flask dashboard dynamically detects nodes and visualizes their metrics in real time.
 
 ---
 
@@ -42,21 +47,20 @@ The broker logs all messages in `/app/data/<topic>.log`, and the Flask consumer 
 ```
 mini-mq/
 │
-├── broker/               # Go-based message broker
+├── broker/                 # Go-based message broker
 │   ├── main.go
 │   ├── handlers.go
 │   ├── storage.go
 │   ├── offset.go
 │   ├── Dockerfile
-│   └── data/             # Logs per topic (auto-created)
+│   └── data/               # Logs per topic (auto-created)
 │
-├── producer/             # Python-based producer (metric collector)
+├── producer/               # Python-based metric producer
 │   ├── producer.py
-│   ├── config.py
 │   ├── Dockerfile
 │   └── requirements.txt
 │
-├── consumer/             # Flask-based dashboard UI
+├── consumer/               # Flask-based dashboard UI
 │   ├── app.py
 │   ├── consumer_logic.py
 │   ├── templates/
@@ -64,12 +68,12 @@ mini-mq/
 │   ├── Dockerfile
 │   └── requirements.txt
 │
-├── k8s/           # Manifests for K8s deployment
+├── k8s/                    # Kubernetes manifests
 │   ├── broker.yaml
 │   ├── consumer.yaml
-│   ├── producer.yaml
+│   ├── producers-daemonset.yaml
 │
-├── docker-compose.yaml   # For local development
+├── docker-compose.yaml
 └── README.md
 ```
 
@@ -79,15 +83,15 @@ mini-mq/
 
 | Category          | Tool / Tech                         | Purpose / Notes |
 |-------------------|-------------------------------------|-----------------|
-| **Languages**     | Go, Python 3                        | Core microservices and metric agents |
+| **Languages**     | Go, Python 3                        | Core services and metric agents |
 | **Frameworks**    | Flask (Python)                      | Web-based consumer dashboard |
 | **Containers**    | Docker, Docker Compose              | Local development setup |
 | **Orchestration** | Kubernetes (Deployments, DaemonSets, Services) | Cluster-wide deployment |
 | **Metrics**       | psutil (Python)                     | Host-level system metrics |
 | **Persistence**   | File-based (`/app/data/*.log`)      | Per-topic message storage |
 | **Logging**       | log (Go)                            | Structured logs |
-| **CI/CD**         | Docker Hub                          | Build and push images |
-| **Frontend**      | HTML + Bootstrap                    | Simple responsive UI |
+| **CI/CD**         | Docker Hub                          | Image publishing |
+| **Frontend**      | HTML + Bootstrap + Chart.js         | Live cluster dashboard |
 | **API**           | REST (HTTP + JSON)                  | Communication protocol |
 
 ---
@@ -109,14 +113,14 @@ mini-mq/
    ```
    http://localhost:8080
    ```
-   You’ll see CPU, memory, and disk metrics streaming in real time.
+
+   You’ll see CPU, memory, and disk metrics streaming in real time, with a simple dashboard per topic.
 
 ---
 
-## ☸️ Running on Kubernetes
+## ☸️ Running on Kubernetes (Recommended)
 
-### 1️⃣ Push images to Docker Hub
-Make sure all images are built and pushed:
+### 1️⃣ Build and push images
 ```bash
 docker build -t lui5da/broker:latest ./broker
 docker build -t lui5da/producer:latest ./producer
@@ -127,69 +131,92 @@ docker push lui5da/producer:latest
 docker push lui5da/consumer:latest
 ```
 
-### 2️⃣ Apply Kubernetes manifests
+### 2️⃣ Deploy to cluster
 ```bash
-kubectl apply -f kubernetes/namespace.yaml
-kubectl apply -f kubernetes/broker.yaml
-kubectl apply -f kubernetes/consumer.yaml
-kubectl apply -f kubernetes/producers-daemonset.yaml
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/broker.yaml
+kubectl apply -f k8s/consumer.yaml
+kubectl apply -f k8s/producers-daemonset.yaml
 ```
 
-### 3️⃣ Check status
+### 3️⃣ Monitor status
 ```bash
 kubectl get pods -n minimq
 kubectl get svc -n minimq
 ```
 
-### 4️⃣ Access the dashboard
-If you’re using a cloud provider:
+### 4️⃣ Open dashboard
 ```
 http://<EXTERNAL-IP>:8080
 ```
 
+<img width="1919" height="952" alt="Screenshot From 2025-10-22 18-56-56" src="https://github.com/user-attachments/assets/bd8e5625-99fd-4c57-9d47-656b6b957269" />
+
+
+You’ll see a **card for each node** in your cluster with live metrics for CPU, memory, and disk.
+
 ---
 
-## 📊 Observability (via DaemonSets)
+## 📊 Node-Level Observability
 
 | DaemonSet | Metric | Description |
 |------------|---------|-------------|
-| `producer-host-cpu`  | CPU usage (%)   | Collects host CPU metrics every second |
-| `producer-host-mem`  | Memory usage (%)| Collects host memory stats every 5 seconds |
-| `producer-host-disk` | Disk usage (%)  | Collects host disk utilization every 5 seconds |
+| `producer-host-cpu`  | CPU usage (%)   | Collects average CPU load per node |
+| `producer-host-mem`  | Memory usage (%)| Collects memory utilization per node |
+| `producer-host-disk` | Disk usage (%)  | Collects filesystem utilization per node |
 
-Each node in the cluster runs one instance of each DaemonSet, ensuring cluster-wide visibility.
+### How it works:
+- On startup, producers register their **node name** with the broker (`topic="nodes"`).  
+- Metrics are sent to the broker at intervals (e.g., every 1–5 seconds).  
+- The broker stores them in `data/<node>-<metric>.log`.  
+- The Flask dashboard queries `/nodes` to dynamically discover nodes  
+  and fetches their latest metrics from `/consume`.
 
-All metrics are sent to the broker endpoint:
+---
+
+## 📈 Dashboard Overview
+
+The Flask dashboard automatically visualizes each node’s metrics:
+
 ```
-http://broker:5000/produce
+📊 MiniMQ Cluster Dashboard
+
+🖥️ node-1
+───────────────────────────────
+CPU Usage:   45.3%
+Memory:      71.8%
+Disk Usage:  12.4%
+(graphs...)
+
+🖥️ node-2
+───────────────────────────────
+CPU Usage:   33.1%
+Memory:      64.9%
+Disk Usage:  14.7%
 ```
-and stored in `/app/data/<topic>.log`.
+
+✅ Live updating every 2 seconds  
+✅ Automatic node discovery  
+✅ Separate colors and labels per metric (blue = CPU, green = MEM, orange = DISK)
 
 ---
 
 ## 🧰 Useful Kubernetes Commands
 
 ```bash
-# View logs for all producers
+# View logs
+kubectl logs -n minimq -l app=broker
 kubectl logs -n minimq -l app=producer-host-cpu
 kubectl logs -n minimq -l app=producer-host-mem
 kubectl logs -n minimq -l app=producer-host-disk
 
 # Restart deployments
 kubectl rollout restart deployment broker -n minimq
+kubectl rollout restart deployment consumer -n minimq
 
-# Enter broker container
+# Access broker shell
 kubectl exec -it $(kubectl get pod -l app=broker -n minimq -o name) -n minimq -- /bin/bash
 ```
-
----
-
-## 🧠 Future Improvements
-
-- 📈 Add Prometheus/Grafana exporters for real-time visualization  
-- ☁️ Helm chart for automated deployments  
-- 🔐 Add authentication and rate limiting to the broker API  
-- 🧩 Integrate persistent storage (PVC) for broker logs  
 
 ---
 
