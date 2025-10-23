@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: producer-host-cpu
+  namespace: minimq
+spec:
+  selector:
+    matchLabels:
+      app: producer-host-cpu
+  template:
+    metadata:
+      labels:
+        app: producer-host-cpu
+    spec:
+      hostPID: true       
+      containers:
+        - name: producer
+          image: lui5da/producer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: METRIC_TYPE
+              value: "cpu"
+            - name: BROKER_URL
+              value: "http://broker:5000/produce"
+            - name: INTERVAL_SECONDS
+              value: "1"
+            - name: HOST_MODE
+              value: "true"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+                  
+          volumeMounts:
+            - name: host-proc
+              mountPath: /host_proc
+              readOnly: true
+            - name: host-cgroup
+              mountPath: /host_cgroup
+              readOnly: true
+
+      volumes:
+        - name: host-proc
+          hostPath:
+            path: /proc
+        - name: host-cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: producer-host-mem
+  namespace: minimq
+spec:
+  selector:
+    matchLabels:
+      app: producer-host-mem
+  template:
+    metadata:
+      labels:
+        app: producer-host-mem
+    spec:
+      hostPID: true       
+      containers:
+
+        - name: producer
+          image: lui5da/producer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: METRIC_TYPE
+              value: "mem"
+            - name: BROKER_URL
+              value: "http://broker:5000/produce"
+            - name: INTERVAL_SECONDS
+              value: "1"
+            - name: HOST_MODE
+              value: "true"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: host-proc
+              mountPath: /host_proc
+              readOnly: true
+            - name: host-cgroup
+              mountPath: /host_cgroup
+              readOnly: true
+
+      volumes:
+        - name: host-proc
+          hostPath:
+            path: /proc
+        - name: host-cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: producer-host-disk
+  namespace: minimq
+spec:
+  selector:
+    matchLabels:
+      app: producer-host-disk
+  template:
+    metadata:
+      labels:
+        app: producer-host-disk
+    spec:
+      hostPID: true       
+      containers:
+
+        - name: producer
+          image: lui5da/producer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: METRIC_TYPE
+              value: "disk"
+            - name: BROKER_URL
+              value: "http://broker:5000/produce"
+            - name: INTERVAL_SECONDS
+              value: "1"
+            - name: HOST_MODE
+              value: "true"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+          volumeMounts:
+            - name: host-proc
+              mountPath: /host_proc
+              readOnly: true
+            - name: host-cgroup
+              mountPath: /host_cgroup
+              readOnly: true
+
+      volumes:
+        - name: host-proc
+          hostPath:
+            path: /proc
+        - name: host-cgroup
+          hostPath:
+            path: /sys/fs/cgroup

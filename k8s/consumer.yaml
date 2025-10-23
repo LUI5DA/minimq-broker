@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: minimq
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: consumer
+  template:
+    metadata:
+      labels: 
+        app: consumer
+
+    spec:
+      containers: 
+      - name: consumer
+        image: lui5da/consumer:latest
+        ports:
+        - containerPort: 8080
+
+
+---  
+
+apiVersion: v1
+kind: Service
+metadata: 
+  name: consumer
+  namespace: minimq
+
+spec: 
+  selector:
+    app: consumer
+
+  ports:
+  - port: 8080
+    targetPort: 8080
+  
+  type: LoadBalancer
+  
+
+
+

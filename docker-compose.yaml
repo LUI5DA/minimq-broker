@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  broker:
+    build: ./broker
+    ports:
+      - "5000:5000"
+    volumes:
+      - broker-data:/app/data
+    networks:
+      - minimq-network
+
+  producer-cpu:
+    build: ./producer
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
+    environment:
+      - METRIC_TYPE=cpu
+      - BROKER_URL=http://broker:5000/produce
+      - INTERVAL_SECONDS=1
+      - HOST_MODE=true
+      - NODE_NAME=Local
+    volumes:
+      - /proc:/host_proc:ro
+
+  producer-mem:
+    build: ./producer
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
+    environment:
+      - METRIC_TYPE=mem
+      - BROKER_URL=http://broker:5000/produce
+      - INTERVAL_SECONDS=1
+      - HOST_MODE=true 
+      - NODE_NAME=Local
+    volumes:
+      - /proc:/host_proc:ro
+
+  producer-disk:
+    build: ./producer
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+    restart: unless-stopped
+    environment:
+      - METRIC_TYPE=disk
+      - BROKER_URL=http://broker:5000/produce
+      - INTERVAL_SECONDS=1
+      - HOST_MODE=true
+      - NODE_NAME=Local
+    volumes:
+      - /proc:/host_proc:ro
+
+  consumer:
+    build: ./consumer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - broker
+    networks:
+      - minimq-network
+
+volumes:
+  broker-data:
+
+networks:
+  minimq-network:
+    driver: bridge
